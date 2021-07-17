@@ -38,4 +38,9 @@ public:
 private:
     RequestCallback m_postCb;
     int m_socket {-1};
+
+private:
+    void acceptConnections();
+    void printPeer(int socket);
+    void readHttpRequest(int peer);
 };

@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <poll.h>
 #include "log.h"
 
 HttpServer::HttpServer()
@@ -61,6 +62,7 @@ bool HttpServer::startListing(const std::string &ip, int port)
     }
 
     PRINT_LOG("Listening on " << ip << ":" << port);
+    acceptConnections();
 
     return true;
 }
@@ -94,4 +96,66 @@ bool HttpServer::isWork() const
 void HttpServer::setRequestCallback(const HttpServer::RequestCallback &cb)
 {
     m_postCb = cb;
+}
+
+void HttpServer::acceptConnections()
+{
+    while (isWork())
+    {
+        int peer = accept(m_socket, nullptr, nullptr);
+        if (peer < 0)
+        {
+            if (errno == EINVAL)
+                return;
+
+            PRINT_ERROR("Failed to accept connection " << errno);
+            continue;
+        }
+
+        printPeer(peer);
+        readHttpRequest(peer);
+
+        shutdown(peer, SHUT_RDWR);
+        close(peer);
+    }
+}
+
+void HttpServer::printPeer(int socket)
+{
+    sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+
+    getpeername(socket, reinterpret_cast<sockaddr*>(&addr), &len);
+
+    if (addr.ss_family == AF_INET)
+    {
+        sockaddr_in *s = reinterpret_cast<sockaddr_in*>(&addr);
+        char ipstr[INET_ADDRSTRLEN];
+        int port = ntohs(s->sin_port);
+
+        if (inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr)) != nullptr)
+        {
+            PRINT_LOG("New peer: " << ipstr << ":" << port);
+            return;
+        }
+    }
+
+    PRINT_ERROR("Unknown peer");
+}
+
+void HttpServer::readHttpRequest(int peer)
+{
+    const int bufSize = 1024;
+    char buf[bufSize + 1] = {};
+
+    pollfd pollInfo = {};
+    pollInfo.fd = peer;
+    pollInfo.events = POLLIN;
+
+    poll(&pollInfo, 1, 1000);
+
+    int count = read(peer, buf, bufSize);
+    buf[count] = '\0';
+
+    PRINT_LOG("Receive msg (" << count << " bytes):\n" << buf << "\n---End msg---");
 }
