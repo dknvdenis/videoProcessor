@@ -15,4 +15,5 @@ struct CharRange
     CharIter end {nullptr};
 
     std::string toString() const { return std::string(begin, end); }
+    bool eof() const { return begin == end; }
 };

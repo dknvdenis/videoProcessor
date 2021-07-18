@@ -38,7 +38,7 @@ CharRange StreamReader::read()
     int count = ::read(m_socket, m_buffer.get() + m_bufPos, m_bufSize - m_bufPos);
 
     if (count == 0)
-        throw ReaderError("EOF");
+        return CharRange();
     else if (count == -1)
         throw ReaderError("Read error", errno);
 
