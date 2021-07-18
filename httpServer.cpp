@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include "log.h"
+#include "httpLexer.h"
 
 HttpServer::HttpServer()
 {
@@ -158,4 +159,25 @@ void HttpServer::readHttpRequest(int peer)
     buf[count] = '\0';
 
     PRINT_LOG("Receive msg (" << count << " bytes):\n" << buf << "\n---End msg---");
+
+    HttpLexer lexer;
+
+    CharIter lexerIter;
+    std::vector<Token> tokens;
+
+    std::tie(lexerIter, tokens) = lexer.getTokens(buf, buf + count);
+
+    PRINT_LOG("tokens size: " << tokens.size());
+    for (const Token &token : tokens)
+    {
+        PRINT_LOG_SIMPLE("token type: \"" << TokenTypeToString(token.type) << "\"\t");
+
+        if (token.type == TokenType::string)
+        {
+            PRINT_LOG_SIMPLE("token value: \"" << std::string(token.begin, token.end)
+                             << "\"");
+        }
+
+        PRINT_LOG_SIMPLE(std::endl);
+    }
 }

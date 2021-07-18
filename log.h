@@ -9,3 +9,6 @@
     std::cout << msg \
               << " " << __FILE__ << ": " << __LINE__ \
               << std::endl
+
+#define PRINT_LOG_SIMPLE(msg) \
+    std::cout << msg

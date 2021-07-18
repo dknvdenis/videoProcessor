@@ -9,4 +9,5 @@ add_executable(${PROJECT_NAME} main.cpp
     log.h
     httpServer.cpp httpServer.h
     app.cpp app.h
+    httpLexer.cpp httpLexer.h
 )
