@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include "charIter.h"
 
 enum class TokenType
 {
@@ -40,18 +41,15 @@ inline std::string TokenTypeToString(TokenType type)
     return "unknown";
 }
 
-using CharIter = char*;
-
 struct Token
 {
     Token() = default;
     explicit Token(TokenType type_, CharIter begin_, CharIter end_)
-        : type(type_), begin(begin_), end(end_)
+        : type(type_), value(begin_, end_)
     {}
 
     TokenType type {TokenType::unknown};
-    CharIter begin {nullptr};
-    CharIter end {nullptr};
+    CharRange value;
 };
 
 class HttpLexer

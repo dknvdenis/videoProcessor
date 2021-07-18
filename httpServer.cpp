@@ -1,12 +1,12 @@
 #include "httpServer.h"
 
-#include <iostream>
-//#include <sys/types.h>
+#include <cassert>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <poll.h>
+
 #include "log.h"
 #include "httpLexer.h"
 
@@ -99,6 +99,11 @@ void HttpServer::setRequestCallback(const HttpServer::RequestCallback &cb)
     m_postCb = cb;
 }
 
+void HttpServer::setClientConnectedCallback(const ClientConnectedCallback &cb)
+{
+    m_clientConnectedCb = cb;
+}
+
 void HttpServer::acceptConnections()
 {
     while (isWork())
@@ -146,26 +151,16 @@ void HttpServer::printPeer(int socket)
 
 void HttpServer::readHttpRequest(int peer)
 {
-    const int bufSize = 1024;
-    char buf[bufSize + 1] = {};
+    StreamReader reader(peer/*, std::chrono::seconds(5), 10*/);
 
-    pollfd pollInfo = {};
-    pollInfo.fd = peer;
-    pollInfo.events = POLLIN;
-
-    poll(&pollInfo, 1, 1000);
-
-    int count = read(peer, buf, bufSize);
-    buf[count] = '\0';
-
-    PRINT_LOG("Receive msg (" << count << " bytes):\n" << buf << "\n---End msg---");
+    auto range = reader.read();
 
     HttpLexer lexer;
 
     CharIter lexerIter;
     std::vector<Token> tokens;
 
-    std::tie(lexerIter, tokens) = lexer.getTokens(buf, buf + count);
+    std::tie(lexerIter, tokens) = lexer.getTokens(range.begin, range.end);
 
     PRINT_LOG("tokens size: " << tokens.size());
     for (const Token &token : tokens)
@@ -174,10 +169,54 @@ void HttpServer::readHttpRequest(int peer)
 
         if (token.type == TokenType::string)
         {
-            PRINT_LOG_SIMPLE("token value: \"" << std::string(token.begin, token.end)
+            PRINT_LOG_SIMPLE("token value: \"" << token.value.toString()
                              << "\"");
         }
 
         PRINT_LOG_SIMPLE(std::endl);
     }
+}
+
+StreamReader::StreamReader(int socket, std::chrono::milliseconds timeout,
+                           std::size_t bufferSize)
+    : m_socket(socket),
+      m_timeLeft(timeout),
+      m_bufSize(bufferSize),
+      m_buffer(new char[bufferSize])
+{
+    assert(socket > -1);
+    assert(bufferSize > 0);
+}
+
+CharRange StreamReader::read()
+{
+    if (m_timeLeft.count() == 0)
+        throw ReaderTimeout();
+
+    if (m_bufPos == m_bufSize)
+        throw ReaderBufferOverflow();
+
+    pollfd pollInfo = {};
+    pollInfo.fd = m_socket;
+    pollInfo.events = POLLIN;
+
+    int pollStatus = poll(&pollInfo, 1, m_timeLeft.count());
+
+    if (pollStatus == 0)
+        throw ReaderTimeout();
+    else if (pollStatus == -1)
+        throw ReaderError(errno);
+
+    int count = ::read(m_socket, m_buffer.get() + m_bufPos, m_bufSize - m_bufPos);
+
+    if (count == 0)
+        throw ReaderError("EOF");
+    else if (count == -1)
+        throw ReaderError("Read error", errno);
+
+    CharRange result(m_buffer.get() + m_bufPos, m_buffer.get() + m_bufPos + count);
+
+    m_bufPos += count;
+
+    return result;
 }

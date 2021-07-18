@@ -1,4 +1,5 @@
 #include "app.h"
+#include "log.h"
 
 App::App()
 {
@@ -7,8 +8,19 @@ App::App()
 
 bool App::start(const std::string &ip, int port)
 {
-    if (!m_httpServer.startListing(ip, port))
-        return false;
+    try
+    {
+        if (!m_httpServer.startListing(ip, port))
+            return false;
+    }
+    catch (const ReaderError &exc)
+    {
+        PRINT_ERROR("! Exception. " << exc.what());
+    }
+    catch (...)
+    {
+        PRINT_ERROR("! Unknown exception. ");
+    }
 
     return true;
 }

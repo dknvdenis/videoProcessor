@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #define PRINT_ERROR(msg) \
     std::cerr << msg \
               << " " << __FILE__ << ": " << __LINE__ \

@@ -10,4 +10,5 @@ add_executable(${PROJECT_NAME} main.cpp
     httpServer.cpp httpServer.h
     app.cpp app.h
     httpLexer.cpp httpLexer.h
+    charIter.h
 )
