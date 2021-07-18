@@ -57,8 +57,6 @@ struct Token
 class HttpLexer
 {
 public:
-    HttpLexer();
-
-public:
     std::pair<CharIter, std::vector<Token>> getTokens(CharIter begin, CharIter end);
+    std::pair<CharIter, Token> getToken(CharIter begin, CharIter end);
 };

@@ -1,10 +1,5 @@
 #include "httpLexer.h"
-#include <cctype>
-
-HttpLexer::HttpLexer()
-{
-
-}
+#include <tuple>
 
 std::pair<CharIter, std::vector<Token>>
 HttpLexer::getTokens(CharIter begin, CharIter end)
@@ -14,12 +9,25 @@ HttpLexer::getTokens(CharIter begin, CharIter end)
     auto &iter = result.first;
     auto &tokens = result.second;
 
-    auto tokenBegin = begin;
-
     iter = begin;
-    TokenType type = TokenType::unknown;
 
-    auto findToken = [&] {
+    while (iter != end)
+    {
+        Token token;
+        std::tie(iter, token) = getToken(iter, end);
+        tokens.push_back(token);
+    }
+
+    return result;
+}
+
+std::pair<CharIter, Token> HttpLexer::getToken(CharIter begin, CharIter end)
+{
+    TokenType type = TokenType::unknown;
+    auto iter = begin;
+
+    for (; iter != end; ++iter)
+    {
         char sym = *iter;
 
         switch (sym)
@@ -50,20 +58,15 @@ HttpLexer::getTokens(CharIter begin, CharIter end)
 
         if (type != TokenType::unknown)
         {
-            if (tokenBegin != iter)
-                tokens.push_back(Token(TokenType::string, tokenBegin, iter));
-
-            tokens.push_back(Token(type, iter, iter + 1));
-
-            tokenBegin = iter + 1;
+            if (begin != iter)
+                return std::make_pair(iter, Token(TokenType::string, begin, iter));
+            else
+                return std::make_pair(iter + 1, Token(type, iter, iter + 1));
         }
-    };
-
-    for (; iter != end; ++iter)
-        findToken();
+    }
 
     if (type == TokenType::unknown)
-        tokens.push_back(Token(TokenType::string, tokenBegin, end));
+        return std::make_pair(iter, Token(TokenType::string, begin, end));
 
-    return result;
+    return std::make_pair(nullptr, Token());
 }
