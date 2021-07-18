@@ -1,5 +1,6 @@
 #include "app.h"
 #include "log.h"
+#include "vpException.h"
 
 App::App()
 {

@@ -11,4 +11,6 @@ add_executable(${PROJECT_NAME} main.cpp
     app.cpp app.h
     httpLexer.cpp httpLexer.h
     charIter.h
+    streamReader.cpp streamReader.h
+    vpException.h
 )
