@@ -150,16 +150,11 @@ void HttpServer::printPeer(int socket)
 
 void HttpServer::readHttpRequest(int peer)
 {
-    StreamReader reader(peer/*, std::chrono::seconds(5), 10*/);
+    auto reader = std::make_shared<StreamReader>(peer);
 
-    auto range = reader.read();
+    HttpLexer lexer(reader);
 
-    HttpLexer lexer;
-
-    CharIter lexerIter;
-    std::vector<Token> tokens;
-
-    std::tie(lexerIter, tokens) = lexer.getTokens(range.begin, range.end);
+    std::vector<Token> tokens = lexer.getTokens();
 
     PRINT_LOG("tokens size: " << tokens.size());
     for (const Token &token : tokens)

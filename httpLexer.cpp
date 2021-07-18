@@ -1,32 +1,40 @@
 #include "httpLexer.h"
 #include <tuple>
 
-std::pair<CharIter, std::vector<Token>>
-HttpLexer::getTokens(CharIter begin, CharIter end)
+HttpLexer::HttpLexer(IStreamReaderPtr reader)
+    : m_reader(reader)
 {
-    std::pair<CharIter, std::vector<Token>> result;
 
-    auto &iter = result.first;
-    auto &tokens = result.second;
+}
 
-    iter = begin;
+std::vector<Token> HttpLexer::getTokens()
+{
+    std::vector<Token> result;
 
-    while (iter != end)
+    while (true)
     {
-        Token token;
-        std::tie(iter, token) = getToken(iter, end);
-        tokens.push_back(token);
+        Token token = getToken();
+        if (token.isUnknown())
+            break;
+
+        result.push_back(token);
     }
 
     return result;
 }
 
-std::pair<CharIter, Token> HttpLexer::getToken(CharIter begin, CharIter end)
+Token HttpLexer::getToken()
 {
-    TokenType type = TokenType::unknown;
-    auto iter = begin;
+    if (m_charIter.eof())
+        m_charIter = m_reader->read();
 
-    for (; iter != end; ++iter)
+    if (m_charIter.eof())
+        return Token();
+
+    TokenType type = TokenType::unknown;
+    auto iter = m_charIter.begin;
+
+    for (; iter != m_charIter.end; ++iter)
     {
         char sym = *iter;
 
@@ -58,15 +66,26 @@ std::pair<CharIter, Token> HttpLexer::getToken(CharIter begin, CharIter end)
 
         if (type != TokenType::unknown)
         {
-            if (begin != iter)
-                return std::make_pair(iter, Token(TokenType::string, begin, iter));
+            if (m_charIter.begin != iter)
+            {
+                auto token = Token(TokenType::string, m_charIter.begin, iter);
+                m_charIter.begin = iter;
+                return token;
+            }
             else
-                return std::make_pair(iter + 1, Token(type, iter, iter + 1));
+            {
+                m_charIter.begin = iter + 1;
+                return Token(type, iter, iter + 1);
+            }
         }
     }
 
     if (type == TokenType::unknown)
-        return std::make_pair(iter, Token(TokenType::string, begin, end));
+    {
+        auto token = Token(TokenType::string, m_charIter.begin, m_charIter.end);
+        m_charIter.begin = iter;
+        return token;
+    }
 
-    return std::make_pair(nullptr, Token());
+    return Token();
 }

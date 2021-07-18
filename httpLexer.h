@@ -2,7 +2,9 @@
 
 #include <vector>
 #include <string>
+
 #include "charIter.h"
+#include "streamReader.h"
 
 enum class TokenType
 {
@@ -50,11 +52,20 @@ struct Token
 
     TokenType type {TokenType::unknown};
     CharRange value;
+
+    bool isUnknown() const { return type == TokenType::unknown; }
 };
 
 class HttpLexer
 {
 public:
-    std::pair<CharIter, std::vector<Token>> getTokens(CharIter begin, CharIter end);
-    std::pair<CharIter, Token> getToken(CharIter begin, CharIter end);
+    explicit HttpLexer(IStreamReaderPtr reader);
+
+public:
+    std::vector<Token> getTokens();
+    Token getToken();
+
+private:
+    IStreamReaderPtr m_reader;
+    CharRange m_charIter;
 };

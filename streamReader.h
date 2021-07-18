@@ -13,6 +13,8 @@ public:
     virtual CharRange read() = 0;
 };
 
+using IStreamReaderPtr = std::shared_ptr<IStreamReader>;
+
 class StreamReader : public IStreamReader
 {
 public:
