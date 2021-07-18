@@ -28,7 +28,18 @@ CharRange StreamReader::read()
     pollInfo.fd = m_socket;
     pollInfo.events = POLLIN;
 
+    using namespace std::chrono;
+    auto startTime = steady_clock::now();
+
     int pollStatus = poll(&pollInfo, 1, m_timeLeft.count());
+
+    auto now = steady_clock::now();
+    auto dur = duration_cast<milliseconds>(now - startTime);
+
+    if (dur > m_timeLeft)
+        m_timeLeft = milliseconds(0);
+    else
+        m_timeLeft -= dur;
 
     if (pollStatus == 0)
         throw ReaderTimeout();
