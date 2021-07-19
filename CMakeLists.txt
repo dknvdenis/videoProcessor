@@ -15,4 +15,5 @@ add_executable(${PROJECT_NAME} main.cpp
     vpException.h
     parserUtils.cpp parserUtils.h
     token.cpp token.h
+    tcpServer.cpp tcpServer.h
 )

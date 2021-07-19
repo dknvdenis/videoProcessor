@@ -1,25 +1,18 @@
 #pragma once
 
-#include <string>
-#include <functional>
-#include "streamReader.h"
+#include "tcpServer.h"
+#include "parserUtils.h"
 
-enum class HttpMethod
+struct ClientContext
 {
-    unknown,
-    post
-};
+    explicit ClientContext(ParserUtils &parser_)
+        : parser(parser_)
+    {}
 
-struct HttpRequest
-{
-    HttpMethod method;
+    ParserUtils &parser;
+
+    std::string method;
     std::string path;
-};
-
-struct HttpResponse
-{
-    int code;
-    std::string content;
 };
 
 class HttpServer
@@ -31,21 +24,11 @@ public:
 public:
     bool startListing(const std::string &ip, int port);
     bool stop();
-    bool isWork() const;
-
-    using RequestCallback = std::function<HttpResponse (const HttpRequest&)>;
-    void setRequestCallback(const RequestCallback &cb);
-
-    using ClientConnectedCallback = std::function<HttpResponse (IStreamReader*)>;
-    void setClientConnectedCallback(const ClientConnectedCallback &cb);
 
 private:
-    RequestCallback m_postCb;
-    int m_socket {-1};
-    ClientConnectedCallback m_clientConnectedCb;
+    TcpServer m_tcpServer;
 
 private:
-    void acceptConnections();
-    void printPeer(int socket);
-    void readHttpRequest(int peer);
+    HttpResponse clientConnected(IStreamReaderPtr reader);
+    bool parseFirstLine(ClientContext &ctx);
 };
