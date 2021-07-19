@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "log.h"
 #include "httpLexer.h"
+#include "vpException.h"
 
 HttpServer::HttpServer()
 {
@@ -27,62 +28,124 @@ bool HttpServer::stop()
     return m_tcpServer.stop();
 }
 
-HttpResponse HttpServer::clientConnected(IStreamReaderPtr reader)
+void HttpServer::setRequestCallback(const HttpServer::RequestCallback &cb)
 {
-    auto lexer = std::make_shared<HttpLexer>(reader);
-    ParserUtils pu(lexer);
-
-    ClientContext ctx(pu);
-
-    pu.setMergeStringSequence(true);
-    pu.setStopSequence({TokenType::cr, TokenType::lf,
-                        TokenType::cr, TokenType::lf});
-
-    bool parseOk = parseFirstLine(ctx);
-    PRINT_LOG("Parse first line: " << parseOk);
-
-    if (!parseOk)
-        return HttpResponse();
-
-    PRINT_LOG("Method: \"" << ctx.method << "\"\tpath: \"" << ctx.path << "\"");
-
-    parseOk = parseHeaders(ctx);
-    PRINT_LOG("Parse headers: " << parseOk);
-
-    if (!parseOk)
-        return HttpResponse();
-
-    PRINT_LOG("ContentLength: \"" << ctx. contentLength
-              << "\"\tisContentTypeUrlencoded: \""
-              << ctx.isContentTypeUrlencoded << "\"");
-
-    if (ctx.contentLength == 0)
-        return HttpResponse();
-
-    while (pu.next())
-    {
-        ; // move to \r\n\r\n
-    }
-
-    pu.setStopSequence({});
-    pu.setMaxLength(ctx.contentLength);
-
-    parseOk = parseParams(ctx);
-    PRINT_LOG("Parse params: " << parseOk);
-
-    if (!parseOk)
-        return HttpResponse();
-
-    PRINT_LOG("Filename: \"" << ctx.filename
-              << "\"\tgain: \"" << ctx.gain << "\"");
-
-    return HttpResponse();
+    m_requestCb = cb;
 }
 
-bool HttpServer::parseFirstLine(ClientContext &ctx)
+std::string HttpServer::clientConnected(IStreamReaderPtr reader)
 {
-    auto &pu = ctx.parser;
+    try
+    {
+        auto lexer = std::make_shared<HttpLexer>(reader);
+        ParserUtils pu(lexer);
 
+        ClientContext ctx;
+
+        pu.setMergeStringSequence(true);
+        pu.setStopSequence({TokenType::cr, TokenType::lf,
+                            TokenType::cr, TokenType::lf});
+
+        bool parseOk = parseFirstLine(pu, ctx);
+        PRINT_LOG("Parse first line: " << parseOk);
+
+        if (!parseOk)
+            return makeHttpResponse(400, "Failed to parse http header");
+
+        PRINT_LOG("Method: \"" << ctx.method << "\"\tpath: \"" << ctx.path << "\"");
+
+        parseOk = parseHeaders(pu, ctx);
+        PRINT_LOG("Parse headers: " << parseOk);
+
+        if (!parseOk)
+            return makeHttpResponse(400, "Failed to parse http header");
+
+        PRINT_LOG("ContentLength: \"" << ctx. contentLength
+                  << "\"\tisContentTypeUrlencoded: \""
+                  << ctx.isContentTypeUrlencoded << "\"");
+
+        if (ctx.contentLength == 0)
+            return makeHttpResponse(400, "Content not found");
+
+        while (pu.next())
+        {
+            ; // move to \r\n\r\n
+        }
+
+        pu.setStopSequence({});
+        pu.setMaxLength(ctx.contentLength);
+
+        parseOk = parseParams(pu, ctx);
+        PRINT_LOG("Parse params: " << parseOk);
+
+        if (!parseOk)
+            return makeHttpResponse(400, "Failed to parse params");
+
+        PRINT_LOG("Filename: \"" << ctx.filename
+                  << "\"\tgain: \"" << ctx.gain << "\"");
+
+        if (m_requestCb)
+        {
+            if (m_requestCb(ctx))
+                return makeHttpResponse(200);
+            else
+                return makeHttpResponse(404, "File not found");
+        }
+    }
+    catch (const ReaderTimeout &exc)
+    {
+        PRINT_ERROR("!Exception: reader timeout. " << exc.what());
+        return makeHttpResponse(408, "timeout");
+    }
+    catch (const ReaderBufferOverflow &exc)
+    {
+        PRINT_ERROR("!Exception: reader buffer overflow. " << exc.what());
+        return makeHttpResponse(400, "Content too large");
+    }
+    catch (...)
+    {
+        PRINT_ERROR("!Exception: unknown");
+    }
+
+    return makeHttpResponse(500);
+}
+
+std::string HttpServer::makeHttpResponse(int code, const std::string &content)
+{
+    std::string response("HTTP/1.1 ");
+    response.append(httpCodeToStatusText(code));
+    response.append("\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Connection: close\r\n"
+                    "Content-Length: ");
+    response.append(std::to_string(content.size()));
+    response.append("\r\n\r\n");
+    response.append(content);
+
+    return response;
+}
+
+std::string HttpServer::httpCodeToStatusText(int code)
+{
+    switch (code)
+    {
+    case 200:
+        return "200 OK";
+    case 400:
+        return "400 Bad Request";
+    case 404:
+        return "404 Not Found";
+    case 408:
+        return "408 Request Timeout";
+    case 500:
+        return "500 Internal Server Error";
+    default:
+        return std::to_string(code) + " code";
+    }
+}
+
+bool HttpServer::parseFirstLine(ParserUtils &pu, ClientContext &ctx)
+{
     // example: POST /process HTTP/1.1
     if (!pu.expected(TokenType::string))
         return false;
@@ -120,10 +183,8 @@ bool HttpServer::parseFirstLine(ClientContext &ctx)
     return true;
 }
 
-bool HttpServer::parseHeaders(ClientContext &ctx)
+bool HttpServer::parseHeaders(ParserUtils &pu, ClientContext &ctx)
 {
-    auto &pu = ctx.parser;
-
     while (!pu.isStopSequenceReached())
     {
         if (ctx.contentLengthFound && ctx.contentTypeFound)
@@ -176,10 +237,8 @@ bool HttpServer::parseHeaders(ClientContext &ctx)
     return ctx.contentLengthFound && ctx.contentTypeFound;
 }
 
-bool HttpServer::parseParams(ClientContext &ctx)
+bool HttpServer::parseParams(ParserUtils &pu, ClientContext &ctx)
 {
-    auto &pu = ctx.parser;
-
     while (!pu.isMaxLengthReached())
     {
         if (ctx.filenameFound && ctx.gainFound)

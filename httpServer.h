@@ -1,16 +1,11 @@
 #pragma once
 
+#include <functional>
 #include "tcpServer.h"
 #include "parserUtils.h"
 
 struct ClientContext
 {
-    explicit ClientContext(ParserUtils &parser_)
-        : parser(parser_)
-    {}
-
-    ParserUtils &parser;
-
     std::string method;
     std::string path;
 
@@ -37,12 +32,19 @@ public:
     bool startListing(const std::string &ip, int port);
     bool stop();
 
-private:
-    TcpServer m_tcpServer;
+    using RequestCallback = std::function<bool (const ClientContext&)>;
+    void setRequestCallback(const RequestCallback &cb);
 
 private:
-    HttpResponse clientConnected(IStreamReaderPtr reader);
-    bool parseFirstLine(ClientContext &ctx);
-    bool parseHeaders(ClientContext &ctx);
-    bool parseParams(ClientContext &ctx);
+    TcpServer m_tcpServer;
+    RequestCallback m_requestCb;
+
+private:
+    std::string clientConnected(IStreamReaderPtr reader);
+    std::string makeHttpResponse(int code, const std::string &content = std::string());
+    std::string httpCodeToStatusText(int code);
+
+    bool parseFirstLine(ParserUtils &pu, ClientContext &ctx);
+    bool parseHeaders(ParserUtils &pu, ClientContext &ctx);
+    bool parseParams(ParserUtils &pu, ClientContext &ctx);
 };

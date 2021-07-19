@@ -11,18 +11,6 @@ enum class HttpMethod
     post
 };
 
-struct HttpRequest
-{
-    HttpMethod method;
-    std::string path;
-};
-
-struct HttpResponse
-{
-    int code {500};
-    std::string content;
-};
-
 class TcpServer
 {
 public:
@@ -34,7 +22,7 @@ public:
     bool stop();
     bool isWork() const;
 
-    using ClientConnectedCallback = std::function<HttpResponse (IStreamReaderPtr)>;
+    using ClientConnectedCallback = std::function<std::string (IStreamReaderPtr)>;
     void setClientConnectedCallback(const ClientConnectedCallback &cb);
 
 private:

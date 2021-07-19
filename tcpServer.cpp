@@ -114,10 +114,23 @@ void TcpServer::acceptConnections()
 
         if (m_clientConnectedCb)
         {
-            auto reader = std::make_shared<StreamReader>(peer);
-            auto response = m_clientConnectedCb(reader);
+            auto reader = std::make_shared<StreamReader>(peer/*,
+                                                         std::chrono::seconds(5),
+                                                         100*/);
+            std::string response = m_clientConnectedCb(reader);
+            int leftToSend = response.size();
 
-            // send response to peer
+            do
+            {
+                int count = send(peer, response.c_str(), response.size(), 0);
+                if (count < 0)
+                {
+                    PRINT_ERROR("Failed to send response. " << errno);
+                    break;
+                }
+
+                leftToSend -= count;
+            } while (leftToSend > 0);
         }
         else
             PRINT_ERROR("Callback not found");
