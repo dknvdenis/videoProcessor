@@ -19,6 +19,12 @@ struct ClientContext
 
     std::size_t contentLength {0};
     bool isContentTypeUrlencoded {false};
+
+    bool filenameFound {false};
+    bool gainFound {false};
+
+    std::string filename;
+    int gain {0};
 };
 
 class HttpServer
@@ -38,4 +44,5 @@ private:
     HttpResponse clientConnected(IStreamReaderPtr reader);
     bool parseFirstLine(ClientContext &ctx);
     bool parseHeaders(ClientContext &ctx);
+    bool parseParams(ClientContext &ctx);
 };

@@ -59,6 +59,23 @@ HttpResponse HttpServer::clientConnected(IStreamReaderPtr reader)
     if (ctx.contentLength == 0)
         return HttpResponse();
 
+    while (pu.next())
+    {
+        ; // move to \r\n\r\n
+    }
+
+    pu.setStopSequence({});
+    pu.setMaxLength(ctx.contentLength);
+
+    parseOk = parseParams(ctx);
+    PRINT_LOG("Parse params: " << parseOk);
+
+    if (!parseOk)
+        return HttpResponse();
+
+    PRINT_LOG("Filename: \"" << ctx.filename
+              << "\"\tgain: \"" << ctx.gain << "\"");
+
     return HttpResponse();
 }
 
@@ -157,4 +174,53 @@ bool HttpServer::parseHeaders(ClientContext &ctx)
     }
 
     return ctx.contentLengthFound && ctx.contentTypeFound;
+}
+
+bool HttpServer::parseParams(ClientContext &ctx)
+{
+    auto &pu = ctx.parser;
+
+    while (!pu.isMaxLengthReached())
+    {
+        if (ctx.filenameFound && ctx.gainFound)
+            break;
+
+        if (!pu.expected(TokenType::string))
+            return false;
+
+        if (pu.token().compare("filename"))
+        {
+            if (!pu.expected(TokenType::equalSign))
+                return false;
+
+            if (!pu.expected(TokenType::string))
+                return false;
+
+            ctx.filename = pu.token().toString();
+            ctx.filenameFound = true;
+        }
+        else if (pu.token().compare("gain"))
+        {
+            if (!pu.expected(TokenType::equalSign))
+                return false;
+
+            if (!pu.expected(TokenType::string))
+                return false;
+
+            try
+            {
+                ctx.gain = std::stoi(pu.token().toString()); // throw exc
+                ctx.gainFound = true;
+            }
+            catch (const std::exception &exc)
+            {
+                PRINT_ERROR("Failed to parse gain param. " << exc.what());
+                return false;
+            }
+        }
+
+        pu.skipAndStopAfterSequence({TokenType::ampersand});
+    }
+
+    return ctx.filenameFound && ctx.gainFound;
 }
