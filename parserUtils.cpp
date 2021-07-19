@@ -25,7 +25,7 @@ bool ParserUtils::next()
         m_nextToken.clear();
 
         handleStopSequence();
-        handleMaxLength();
+        handleMaxLength(m_currentToken);
 
         return true;
     }
@@ -34,7 +34,7 @@ bool ParserUtils::next()
     if (m_currentToken.isUnknown())
         return false;
 
-    handleMaxLength();
+    handleMaxLength(m_currentToken);
 
     if (m_mergeStringSequence && !isMaxLengthReached())
     {
@@ -44,7 +44,6 @@ bool ParserUtils::next()
             while (true)
             {
                 auto token = m_lexer->getToken();
-                handleMaxLength();
 
                 if (token.type != TokenType::string)
                 {
@@ -53,6 +52,7 @@ bool ParserUtils::next()
                 }
 
                 m_currentToken.value.end = token.value.end;
+                handleMaxLength(token);
                 if (isMaxLengthReached())
                     break;
             }
@@ -180,12 +180,12 @@ void ParserUtils::handleStopSequence()
     }
 }
 
-void ParserUtils::handleMaxLength()
+void ParserUtils::handleMaxLength(const Token &token)
 {
     if (!m_checkLength)
         return;
 
-    std::size_t tokenLength = m_currentToken.length();
+    std::size_t tokenLength = token.length();
     if (tokenLength > m_maxLength)
         m_maxLength = 0;
     else

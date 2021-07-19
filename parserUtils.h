@@ -44,5 +44,5 @@ private:
 private:
     bool matchStopSequence();
     void handleStopSequence();
-    void handleMaxLength();
+    void handleMaxLength(const Token &token);
 };
