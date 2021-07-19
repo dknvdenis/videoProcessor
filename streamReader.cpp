@@ -3,7 +3,11 @@
 #include <cassert>
 #include <poll.h>
 #include <unistd.h>
+
 #include "vpException.h"
+#include "log.h"
+
+//#define DEBUGE_INPUT
 
 StreamReader::StreamReader(int socket, std::chrono::milliseconds timeout,
                            std::size_t bufferSize)
@@ -54,6 +58,10 @@ CharRange StreamReader::read()
         throw ReaderError("Read error", errno);
 
     CharRange result(m_buffer.get() + m_bufPos, m_buffer.get() + m_bufPos + count);
+
+#ifdef DEBUGE_INPUT
+    PRINT_LOG("receive: " << result.toString());
+#endif
 
     m_bufPos += count;
 

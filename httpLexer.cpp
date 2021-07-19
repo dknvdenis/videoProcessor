@@ -1,5 +1,17 @@
 #include "httpLexer.h"
 #include <tuple>
+#include "log.h"
+
+#if 0
+    #define PRINT_TOKEN(token) \
+        PRINT_LOG(">>> " << TokenTypeToString(token.type) \
+                  << (token.type == TokenType::string \
+                      ? "\t\"" + token.toString() + "\"" \
+                      : ""))
+#else
+    #define PRINT_TOKEN(token)
+#endif
+
 
 HttpLexer::HttpLexer(IStreamReaderPtr reader)
     : m_reader(reader)
@@ -29,7 +41,10 @@ Token HttpLexer::getToken()
         m_charIter = m_reader->read();
 
     if (m_charIter.eof())
+    {
+        PRINT_TOKEN(Token());
         return Token();
+    }
 
     TokenType type = TokenType::unknown;
     auto iter = m_charIter.begin;
@@ -70,12 +85,15 @@ Token HttpLexer::getToken()
             {
                 auto token = Token(TokenType::string, m_charIter.begin, iter);
                 m_charIter.begin = iter;
+                PRINT_TOKEN(token);
                 return token;
             }
             else
             {
                 m_charIter.begin = iter + 1;
-                return Token(type, iter, iter + 1);
+                auto token = Token(type, iter, iter + 1);
+                PRINT_TOKEN(token);
+                return token;
             }
         }
     }
@@ -84,8 +102,10 @@ Token HttpLexer::getToken()
     {
         auto token = Token(TokenType::string, m_charIter.begin, m_charIter.end);
         m_charIter.begin = iter;
+        PRINT_TOKEN(token);
         return token;
     }
 
+    PRINT_TOKEN(Token());
     return Token();
 }
