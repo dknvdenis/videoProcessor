@@ -17,6 +17,8 @@ public:
     bool expected(TokenType type);
     bool expected(std::initializer_list<TokenType> tokens);
 
+    bool skipAndStopAfterSequence(std::initializer_list<TokenType> tokens);
+
     void setStopSequence(const std::vector<TokenType> &tokens);
     bool isStopSequenceReached() const;
     void clearStopSequenceReachedFlag();

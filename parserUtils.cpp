@@ -91,6 +91,38 @@ bool ParserUtils::expected(std::initializer_list<TokenType> tokens)
     return true;
 }
 
+bool ParserUtils::skipAndStopAfterSequence(std::initializer_list<TokenType> tokens)
+{
+    if (tokens.begin() == tokens.end())
+        return false;
+
+    auto currentMatchTokenType = tokens.begin();
+
+    auto matchToken = [&] (const Token &token) {
+        if (token.type == *currentMatchTokenType)
+        {
+            currentMatchTokenType++;
+            return true;
+        }
+
+        return false;
+    };
+
+    while (next())
+    {
+        if (!matchToken(token()))
+        {
+            currentMatchTokenType = tokens.begin();
+            matchToken(token());
+        }
+
+        if (currentMatchTokenType == tokens.end())
+            return true;
+    }
+
+    return false;
+}
+
 void ParserUtils::setStopSequence(const std::vector<TokenType> &tokens)
 {
     m_stopSequence = tokens;
