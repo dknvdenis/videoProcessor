@@ -157,7 +157,7 @@ public:
     {
         m_tokens.push(Token(TokenType::string, m_value, m_value + 3));
         m_tokens.push(Token(TokenType::string, m_value + 3, m_value + 3 + 3));
-        m_tokens.push(Token(TokenType::ampersand, m_value, m_value + 3));
+        m_tokens.push(Token(TokenType::ampersand, m_value, m_value + 1));
     }
 
 public:
@@ -178,18 +178,20 @@ private:
 
 void HttpServer::readHttpRequest(int peer)
 {
-//    auto reader = std::make_shared<StreamReader>(peer);
-//    auto lexer = std::make_shared<HttpLexer>(reader);
+    auto reader = std::make_shared<StreamReader>(peer);
+    auto lexer = std::make_shared<HttpLexer>(reader);
 
-    auto lexerStub = std::make_shared<LexerStub>();
-    ParserUtils parser(lexerStub);
+//    auto lexerStub = std::make_shared<LexerStub>();
+//    ParserUtils parser(lexerStub);
 
-//    ParserUtils parser(lexer);
+    ParserUtils parser(lexer);
 
     parser.setMergeStringSequence(true);
-//    parser.setStopSequence({TokenType::cr, TokenType::lf,
-//                            TokenType::cr, TokenType::lf});
-    parser.setStopSequence({TokenType::string, TokenType::ampersand});
+    parser.setStopSequence({TokenType::cr, TokenType::lf,
+                            TokenType::cr, TokenType::lf});
+//    parser.setStopSequence({TokenType::string, TokenType::ampersand});
+
+    parser.setMaxLength(100);
 
     int i = 0;
     while (parser.next())
@@ -197,6 +199,7 @@ void HttpServer::readHttpRequest(int peer)
         auto &token = parser.token();
 
         PRINT_LOG_SIMPLE("token type: \"" << TokenTypeToString(token.type) << "\"\t");
+        PRINT_LOG_SIMPLE("length: \"" << token.length() << "\"\t");
 
         if (token.type == TokenType::string)
         {
@@ -211,4 +214,5 @@ void HttpServer::readHttpRequest(int peer)
     }
 
     PRINT_LOG("Stop seq flag: " << parser.isStopSequenceReached());
+    PRINT_LOG("Max len flag: " << parser.isMaxLengthReached());
 }

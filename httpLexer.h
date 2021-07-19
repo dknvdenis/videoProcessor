@@ -56,6 +56,7 @@ struct Token
 
     bool isUnknown() const { return type == TokenType::unknown; }
     void clear() { type = TokenType::unknown; value = CharRange(); }
+    std::size_t length() const { return std::distance(value.begin, value.end); }
 };
 
 class ILexer

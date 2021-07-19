@@ -16,12 +16,16 @@ bool ParserUtils::next()
     if (isStopSequenceReached())
         return false;
 
+    if (isMaxLengthReached())
+        return false;
+
     if (!m_nextToken.isUnknown())
     {
         m_currentToken = m_nextToken;
         m_nextToken.clear();
 
         handleStopSequence();
+        handleMaxLength();
 
         return true;
     }
@@ -30,7 +34,9 @@ bool ParserUtils::next()
     if (m_currentToken.isUnknown())
         return false;
 
-    if (m_mergeStringSequence)
+    handleMaxLength();
+
+    if (m_mergeStringSequence && !isMaxLengthReached())
     {
         // Merge a sequence of string tokens into one
         if (m_currentToken.type == TokenType::string)
@@ -38,6 +44,7 @@ bool ParserUtils::next()
             while (true)
             {
                 auto token = m_lexer->getToken();
+                handleMaxLength();
 
                 if (token.type != TokenType::string)
                 {
@@ -46,6 +53,8 @@ bool ParserUtils::next()
                 }
 
                 m_currentToken.value.end = token.value.end;
+                if (isMaxLengthReached())
+                    break;
             }
         }
     }
@@ -91,6 +100,23 @@ void ParserUtils::clearStopSequenceReachedFlag()
     m_stopSequenceMatchScore = 0;
 }
 
+void ParserUtils::setMaxLength(std::size_t bytes)
+{
+    m_maxLength = bytes;
+    m_checkLength = true;
+}
+
+void ParserUtils::disableMaxLengthCheck()
+{
+    m_maxLength = 0;
+    m_checkLength = false;
+}
+
+bool ParserUtils::isMaxLengthReached() const
+{
+    return m_checkLength && m_maxLength == 0;
+}
+
 bool ParserUtils::matchStopSequence()
 {
     if (m_currentToken.type == m_stopSequence[m_stopSequenceMatchScore])
@@ -112,4 +138,16 @@ void ParserUtils::handleStopSequence()
             matchStopSequence();
         }
     }
+}
+
+void ParserUtils::handleMaxLength()
+{
+    if (!m_checkLength)
+        return;
+
+    std::size_t tokenLength = m_currentToken.length();
+    if (tokenLength > m_maxLength)
+        m_maxLength = 0;
+    else
+        m_maxLength -= tokenLength;
 }
