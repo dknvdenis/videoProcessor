@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "charIter.h"
 #include "streamReader.h"
@@ -54,16 +55,28 @@ struct Token
     CharRange value;
 
     bool isUnknown() const { return type == TokenType::unknown; }
+    void clear() { type = TokenType::unknown; value = CharRange(); }
 };
 
-class HttpLexer
+class ILexer
+{
+public:
+    virtual ~ILexer() = default;
+
+public:
+    virtual Token getToken() = 0;
+};
+
+using ILexerPtr = std::shared_ptr<ILexer>;
+
+class HttpLexer : public ILexer
 {
 public:
     explicit HttpLexer(IStreamReaderPtr reader);
 
 public:
     std::vector<Token> getTokens();
-    Token getToken();
+    Token getToken() override;
 
 private:
     IStreamReaderPtr m_reader;

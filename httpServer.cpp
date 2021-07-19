@@ -1,6 +1,7 @@
 #include "httpServer.h"
 
 #include <cassert>
+#include <queue>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -8,6 +9,7 @@
 
 #include "log.h"
 #include "httpLexer.h"
+#include "parserUtils.h"
 
 HttpServer::HttpServer()
 {
@@ -148,17 +150,52 @@ void HttpServer::printPeer(int socket)
     PRINT_ERROR("Unknown peer");
 }
 
+class LexerStub : public ILexer
+{
+public:
+    explicit LexerStub()
+    {
+        m_tokens.push(Token(TokenType::string, m_value, m_value + 3));
+        m_tokens.push(Token(TokenType::string, m_value + 3, m_value + 3 + 3));
+        m_tokens.push(Token(TokenType::ampersand, m_value, m_value + 3));
+    }
+
+public:
+    Token getToken() override
+    {
+        if (m_tokens.empty())
+            return Token();
+
+        auto token = m_tokens.front();
+        m_tokens.pop();
+        return token;
+    }
+
+private:
+    const char *m_value {"0123456789"};
+    std::queue<Token> m_tokens;
+};
+
 void HttpServer::readHttpRequest(int peer)
 {
-    auto reader = std::make_shared<StreamReader>(peer);
+//    auto reader = std::make_shared<StreamReader>(peer);
+//    auto lexer = std::make_shared<HttpLexer>(reader);
 
-    HttpLexer lexer(reader);
+    auto lexerStub = std::make_shared<LexerStub>();
+    ParserUtils parser(lexerStub);
 
-    std::vector<Token> tokens = lexer.getTokens();
+//    ParserUtils parser(lexer);
 
-    PRINT_LOG("tokens size: " << tokens.size());
-    for (const Token &token : tokens)
+    parser.setMergeStringSequence(true);
+//    parser.setStopSequence({TokenType::cr, TokenType::lf,
+//                            TokenType::cr, TokenType::lf});
+    parser.setStopSequence({TokenType::string, TokenType::ampersand});
+
+    int i = 0;
+    while (parser.next())
     {
+        auto &token = parser.token();
+
         PRINT_LOG_SIMPLE("token type: \"" << TokenTypeToString(token.type) << "\"\t");
 
         if (token.type == TokenType::string)
@@ -168,5 +205,10 @@ void HttpServer::readHttpRequest(int peer)
         }
 
         PRINT_LOG_SIMPLE(std::endl);
+        i++;
+        if (i == 41)
+            break;
     }
+
+    PRINT_LOG("Stop seq flag: " << parser.isStopSequenceReached());
 }

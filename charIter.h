@@ -2,7 +2,7 @@
 
 #include <string>
 
-using CharIter = char*;
+using CharIter = const char*;
 
 struct CharRange
 {
