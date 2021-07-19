@@ -75,6 +75,10 @@ Token HttpLexer::getToken()
             type = TokenType::cr;
             break;
 
+        case '"':
+            type = TokenType::doubleQuotes;
+            break;
+
         default:
             type = TokenType::unknown;
         }

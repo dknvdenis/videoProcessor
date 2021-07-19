@@ -10,7 +10,8 @@ enum class TokenType
     equalSign,      // =
     ampersand,      // &
     lf,             // \n
-    cr              // \r
+    cr,             // \r
+    doubleQuotes    // "
 };
 
 inline std::string TokenTypeToString(TokenType type)
@@ -34,6 +35,9 @@ inline std::string TokenTypeToString(TokenType type)
 
     case TokenType::cr:
         return "CR";
+
+    case TokenType::doubleQuotes:
+        return "doubleQuotes";
     }
 
     return "unknown";

@@ -252,11 +252,27 @@ bool HttpServer::parseParams(ParserUtils &pu, ClientContext &ctx)
             if (!pu.expected(TokenType::equalSign))
                 return false;
 
-            if (!pu.expected(TokenType::string))
+            if (!pu.next())
                 return false;
 
-            ctx.filename = pu.token().toString();
-            ctx.filenameFound = true;
+            if (pu.token().type == TokenType::doubleQuotes)
+            {
+                while (pu.next())
+                {
+                    if (pu.token().type == TokenType::doubleQuotes)
+                        ctx.filenameFound = true;
+                    else
+                        ctx.filename += pu.token().toString();
+                }
+
+                if (!ctx.filenameFound)
+                    return false;
+            }
+            else if (pu.token().type == TokenType::string)
+            {
+                ctx.filename = pu.token().toString();
+                ctx.filenameFound = true;
+            }
         }
         else if (pu.token().compare("gain"))
         {
