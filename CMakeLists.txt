@@ -14,4 +14,5 @@ add_executable(${PROJECT_NAME} main.cpp
     streamReader.cpp streamReader.h
     vpException.h
     parserUtils.cpp parserUtils.h
+    token.cpp token.h
 )

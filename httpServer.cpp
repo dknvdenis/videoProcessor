@@ -150,69 +150,61 @@ void HttpServer::printPeer(int socket)
     PRINT_ERROR("Unknown peer");
 }
 
-class LexerStub : public ILexer
-{
-public:
-    explicit LexerStub()
-    {
-        m_tokens.push(Token(TokenType::string, m_value, m_value + 3));
-        m_tokens.push(Token(TokenType::string, m_value + 3, m_value + 3 + 3));
-        m_tokens.push(Token(TokenType::ampersand, m_value, m_value + 1));
-    }
-
-public:
-    Token getToken() override
-    {
-        if (m_tokens.empty())
-            return Token();
-
-        auto token = m_tokens.front();
-        m_tokens.pop();
-        return token;
-    }
-
-private:
-    const char *m_value {"0123456789"};
-    std::queue<Token> m_tokens;
-};
-
 void HttpServer::readHttpRequest(int peer)
 {
     auto reader = std::make_shared<StreamReader>(peer);
     auto lexer = std::make_shared<HttpLexer>(reader);
 
-//    auto lexerStub = std::make_shared<LexerStub>();
-//    ParserUtils parser(lexerStub);
+    ParserUtils pu(lexer);
 
-    ParserUtils parser(lexer);
+    pu.setMergeStringSequence(true);
+    pu.setStopSequence({TokenType::cr, TokenType::lf,
+                        TokenType::cr, TokenType::lf});
 
-    parser.setMergeStringSequence(true);
-    parser.setStopSequence({TokenType::cr, TokenType::lf,
-                            TokenType::cr, TokenType::lf});
-//    parser.setStopSequence({TokenType::string, TokenType::ampersand});
+    std::string httpMethod;
+    std::string path;
 
-    parser.setMaxLength(100);
+    // example: POST /process HTTP/1.1
+    auto parseFirstLine = [&] {
+        if (!pu.expected(TokenType::string))
+            return false;
 
-    int i = 0;
-    while (parser.next())
-    {
-        auto &token = parser.token();
+        httpMethod = pu.token().toString();
 
-        PRINT_LOG_SIMPLE("token type: \"" << TokenTypeToString(token.type) << "\"\t");
-        PRINT_LOG_SIMPLE("length: \"" << token.length() << "\"\t");
+        // -----------------
 
-        if (token.type == TokenType::string)
-        {
-            PRINT_LOG_SIMPLE("token value: \"" << token.value.toString()
-                             << "\"");
-        }
+        if (!pu.expected(TokenType::space))
+            return false;
 
-        PRINT_LOG_SIMPLE(std::endl);
-        i++;
-        if (i == 41)
-            break;
-    }
+        // -----------------
 
-    PRINT_LOG("Stop seq flag: " << parser.isStopSequenceReached());
-    PRINT_LOG("Max len flag: " << parser.isMaxLengthReached());
+        if (!pu.expected(TokenType::string))
+            return false;
+
+        path = pu.token().toString();
+
+        // -----------------
+
+        if (!pu.expected(TokenType::space))
+            return false;
+
+        // -----------------
+
+        if (!pu.expected(TokenType::string))
+            return false;
+
+        if (!pu.token().compare("HTTP/1.1"))
+            return false;
+
+        if (!pu.expected({TokenType::cr, TokenType::lf}))
+            return false;
+
+        return true;
+    };
+
+    bool parseOk = parseFirstLine();
+
+    PRINT_LOG("Parse first line: " << parseOk);
+    if (parseOk)
+        PRINT_LOG("Method: \"" << httpMethod << "\"\tpath: \"" << path << "\"");
 }

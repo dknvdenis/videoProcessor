@@ -69,14 +69,22 @@ void ParserUtils::setMergeStringSequence(bool value)
     m_mergeStringSequence = value;
 }
 
+bool ParserUtils::expected(TokenType type)
+{
+    if (!next())
+        return false;
+
+    if (token().type != type)
+        return false;
+
+    return true;
+}
+
 bool ParserUtils::expected(std::initializer_list<TokenType> tokens)
 {
     for (TokenType type : tokens)
     {
-        if (!next())
-            return false;
-
-        if (token().type != type)
+        if (!expected(type))
             return false;
     }
 
