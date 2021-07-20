@@ -13,4 +13,7 @@ public:
 
 private:
     HttpServer m_httpServer;
+
+private:
+    bool newRequest(const std::string &filename, int gain);
 };
