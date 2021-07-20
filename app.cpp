@@ -5,6 +5,7 @@
 #include "vpException.h"
 #include "copyProcess.h"
 #include "drawHistogramProcess.h"
+#include "brightnessGainProcess.h"
 
 using namespace cv;
 
@@ -34,7 +35,8 @@ bool App::start(const std::string &ip, int port)
 
     try
     {
-        newRequest("/home/denis/no-god-please.mp4", 2);
+//        newRequest("/home/denis/test.mp4", 2);
+        newRequest("/home/denis/no-god-please.mp4", 3);
 //        newRequest("/home/denis/hist_test.jpg", 2);
     }
     catch (const std::exception &exc)
@@ -57,6 +59,7 @@ bool App::newRequest(const std::string &filename, int gain)
 
     processes.push_back(std::make_shared<CopyProcess>());
     processes.push_back(std::make_shared<DrawHistogramProcess>());
+    processes.push_back(std::make_shared<BrightnessGainProcess>(gain));
 
     VideoCapture capture(filename);
 
