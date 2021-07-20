@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME} main.cpp
     tcpServer.cpp tcpServer.h
     iProcess.h
     copyProcess.cpp copyProcess.h
+    drawHistogramProcess.cpp drawHistogramProcess.h
 )
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})

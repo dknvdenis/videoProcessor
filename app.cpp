@@ -4,6 +4,7 @@
 #include "log.h"
 #include "vpException.h"
 #include "copyProcess.h"
+#include "drawHistogramProcess.h"
 
 using namespace cv;
 
@@ -31,7 +32,15 @@ bool App::start(const std::string &ip, int port)
 //        PRINT_ERROR("! Unknown exception. ");
 //    }
 
-    newRequest("/home/denis/no-god-please.mp4", 2);
+    try
+    {
+        newRequest("/home/denis/no-god-please.mp4", 2);
+//        newRequest("/home/denis/hist_test.jpg", 2);
+    }
+    catch (const std::exception &exc)
+    {
+        PRINT_ERROR("!! Exception. " << exc.what());
+    }
 
     return true;
 }
@@ -47,13 +56,14 @@ bool App::newRequest(const std::string &filename, int gain)
     std::vector<IProcessPtr> processes;
 
     processes.push_back(std::make_shared<CopyProcess>());
+    processes.push_back(std::make_shared<DrawHistogramProcess>());
 
     VideoCapture capture(filename);
 
     Mat frame;
 
     if (!capture.isOpened())
-        throw "Error when reading steam_avi";
+        return false;
 
     Mat outFrame;
 
@@ -85,5 +95,5 @@ bool App::newRequest(const std::string &filename, int gain)
 
     waitKey(0);
 
-    return false;
+    return true;
 }
