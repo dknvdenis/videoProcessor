@@ -32,7 +32,7 @@ public:
     bool startListing(const std::string &ip, int port);
     bool stop();
 
-    using RequestCallback = std::function<bool (const ClientContext&)>;
+    using RequestCallback = std::function<bool (const std::string&, int gain)>;
     void setRequestCallback(const RequestCallback &cb);
 
 private:

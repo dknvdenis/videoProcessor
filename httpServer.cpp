@@ -86,7 +86,7 @@ std::string HttpServer::clientConnected(IStreamReaderPtr reader)
 
         if (m_requestCb)
         {
-            if (m_requestCb(ctx))
+            if (m_requestCb(ctx.filename, ctx.gain))
                 return makeHttpResponse(200);
             else
                 return makeHttpResponse(404, "File not found");
