@@ -1,13 +1,7 @@
 #include "app.h"
 
-#include <opencv2/opencv.hpp>
 #include "log.h"
 #include "vpException.h"
-#include "copyProcess.h"
-#include "drawHistogramProcess.h"
-#include "brightnessGainProcess.h"
-
-using namespace cv;
 
 App::App()
 {
@@ -55,48 +49,10 @@ bool App::stop()
 
 bool App::newRequest(const std::string &filename, int gain)
 {
-    std::vector<IProcessPtr> processes;
+    auto resultFuture = m_processor.addTask(filename, gain);
 
-    processes.push_back(std::make_shared<CopyProcess>());
-    processes.push_back(std::make_shared<DrawHistogramProcess>());
-    processes.push_back(std::make_shared<BrightnessGainProcess>(gain));
-
-    VideoCapture capture(filename);
-
-    Mat frame;
-
-    if (!capture.isOpened())
+    if (resultFuture.wait_for(std::chrono::seconds(5)) == std::future_status::timeout)
         return false;
 
-    Mat outFrame;
-
-    namedWindow("w", 1);
-    while (true)
-    {
-        capture >> frame;
-
-        if(frame.empty())
-            break;
-
-        if (outFrame.empty())
-            outFrame = Mat(frame.rows, frame.cols * processes.size(), frame.type());
-
-        for (int i = 0; i < processes.size(); i++)
-        {
-            auto process = processes[i];
-
-            Rect dstRect(frame.cols * i, 0, frame.cols, frame.rows);
-            Mat dst = outFrame(dstRect);
-
-            if (!process->process(frame, dst))
-                PRINT_ERROR(process->name() << ": Failed to process image");
-        }
-
-        imshow("w", outFrame);
-        waitKey(20);
-    }
-
-    waitKey(0);
-
-    return true;
+    return resultFuture.get();
 }

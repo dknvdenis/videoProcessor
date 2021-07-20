@@ -1,6 +1,7 @@
 #pragma once
 
 #include "httpServer.h"
+#include "processor.h"
 
 class App
 {
@@ -13,6 +14,7 @@ public:
 
 private:
     HttpServer m_httpServer;
+    Processor m_processor;
 
 private:
     bool newRequest(const std::string &filename, int gain);

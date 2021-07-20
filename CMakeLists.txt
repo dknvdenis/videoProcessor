@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME} main.cpp
     copyProcess.cpp copyProcess.h
     drawHistogramProcess.cpp drawHistogramProcess.h
     brightnessGainProcess.cpp brightnessGainProcess.h
+    processor.cpp processor.h
 )
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
