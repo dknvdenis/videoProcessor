@@ -110,6 +110,11 @@ std::string HttpServer::clientConnected(IStreamReaderPtr reader)
         PRINT_ERROR("!Exception: reader buffer overflow. " << exc.what());
         return makeHttpResponse(400, "Content too large");
     }
+    catch (const ReaderError &exc)
+    {
+        PRINT_ERROR("!Exception: Read error. " << exc.what());
+        return makeHttpResponse(400, "Read error");
+    }
     catch (...)
     {
         PRINT_ERROR("!Exception: unknown");
