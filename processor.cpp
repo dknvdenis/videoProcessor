@@ -83,11 +83,11 @@ void Processor::processTask(const Task &task)
         }
     };
 
-    std::vector<IProcessPtr> processes;
-
-    processes.push_back(std::make_shared<CopyProcess>());
-    processes.push_back(std::make_shared<DrawHistogramProcess>());
-    processes.push_back(std::make_shared<BrightnessGainProcess>(task.gain));
+    std::vector<IProcessPtr> processes {
+        std::make_shared<CopyProcess>(),
+        std::make_shared<DrawHistogramProcess>(),
+        std::make_shared<BrightnessGainProcess>(task.gain)
+    };
 
     VideoCapture capture(task.filename);
 
