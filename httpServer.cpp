@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <sstream>
 
 #include "log.h"
 #include "httpLexer.h"
@@ -280,16 +281,15 @@ bool HttpServer::parseParams(ParserUtils &pu, ClientContext &ctx)
             if (!pu.expected(TokenType::string))
                 return false;
 
-            try
-            {
-                ctx.gain = std::stof(pu.token().toString()); // throw exc
+            std::stringstream ss;
+            ss.imbue(std::locale("C"));
+
+            std::string value = pu.token().toString();
+            std::replace(value.begin(), value.end(), ',', '.');
+
+            ss.write(value.c_str(), value.size());
+            if (ss >> ctx.gain)
                 ctx.gainFound = true;
-            }
-            catch (const std::exception &exc)
-            {
-                PRINT_ERROR("Failed to parse gain param. " << exc.what());
-                return false;
-            }
         }
 
         pu.skipAndStopAfterSequence({TokenType::ampersand});
