@@ -19,7 +19,7 @@ struct ClientContext
     bool gainFound {false};
 
     std::string filename;
-    unsigned long gain {0};
+    float gain {0};
 };
 
 class HttpServer
@@ -33,7 +33,7 @@ public:
     bool stop();
 
     using RequestCallback = std::function<bool (const std::string&,
-                                                unsigned long gain)>;
+                                                float gain)>;
     void setRequestCallback(const RequestCallback &cb);
 
 private:

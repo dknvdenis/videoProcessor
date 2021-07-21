@@ -5,12 +5,12 @@
 class BrightnessGainProcess : public IProcess
 {
 public:
-    explicit BrightnessGainProcess(unsigned long gain);
+    explicit BrightnessGainProcess(float gain);
 
 public:
     std::string name() const override;
     bool process(cv::Mat &src, cv::Mat &dst) override;
 
 private:
-    unsigned long m_gain;
+    float m_gain;
 };

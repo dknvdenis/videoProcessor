@@ -6,8 +6,8 @@ using namespace cv;
 
 //#define BENCH
 
-BrightnessGainProcess::BrightnessGainProcess(unsigned long gain)
-    : m_gain(gain)
+BrightnessGainProcess::BrightnessGainProcess(float gain)
+    : m_gain(std::abs(gain))
 {
 
 }
@@ -31,9 +31,9 @@ bool BrightnessGainProcess::process(cv::Mat &src, cv::Mat &dst)
         {
             auto srcValue = src.at<Vec3b>(r, c);
 
-            dst.at<Vec3b>(r, c)[0] = std::min(srcValue[0] * m_gain, 255ul);
-            dst.at<Vec3b>(r, c)[1] = std::min(srcValue[1] * m_gain, 255ul);
-            dst.at<Vec3b>(r, c)[2] = std::min(srcValue[2] * m_gain, 255ul);
+            dst.at<Vec3b>(r, c)[0] = std::min(std::roundf(srcValue[0] * m_gain), 255.f);
+            dst.at<Vec3b>(r, c)[1] = std::min(std::roundf(srcValue[1] * m_gain), 255.f);
+            dst.at<Vec3b>(r, c)[2] = std::min(std::roundf(srcValue[2] * m_gain), 255.f);
         }
     }
 

@@ -17,5 +17,5 @@ private:
     Processor m_processor;
 
 private:
-    bool newRequest(const std::string &filename, unsigned long gain);
+    bool newRequest(const std::string &filename, float gain);
 };

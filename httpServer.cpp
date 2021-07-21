@@ -282,7 +282,7 @@ bool HttpServer::parseParams(ParserUtils &pu, ClientContext &ctx)
 
             try
             {
-                ctx.gain = std::stoul(pu.token().toString()); // throw exc
+                ctx.gain = std::stof(pu.token().toString()); // throw exc
                 ctx.gainFound = true;
             }
             catch (const std::exception &exc)

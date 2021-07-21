@@ -36,7 +36,7 @@ bool App::stop()
     return m_httpServer.stop();
 }
 
-bool App::newRequest(const std::string &filename, unsigned long gain)
+bool App::newRequest(const std::string &filename, float gain)
 {
     auto resultFuture = m_processor.addTask(filename, gain);
 
