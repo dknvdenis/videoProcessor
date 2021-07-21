@@ -56,6 +56,12 @@ std::string HttpServer::clientConnected(IStreamReaderPtr reader)
 
         PRINT_LOG("Method: \"" << ctx.method << "\"\tpath: \"" << ctx.path << "\"");
 
+        if (ctx.method != "POST")
+        {
+            PRINT_ERROR("Supported only POST method");
+            return makeHttpResponse(400, "Supported only POST method");
+        }
+
         parseOk = parseHeaders(pu, ctx);
         PRINT_LOG("Parse headers: " << parseOk);
 
