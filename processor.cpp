@@ -97,9 +97,10 @@ void Processor::processTask(const Task &task)
         return;
     }
 
+    VideoWriter recorder;
+
     Mat srcFrame;
     Mat dstFrame;
-    namedWindow("w", 1);
 
     while (true)
     {
@@ -108,14 +109,46 @@ void Processor::processTask(const Task &task)
         if (srcFrame.empty())
         {
             setFutureValue(false);
-            return;
+            break;
         }
 
         if (dstFrame.empty())
         {
             dstFrame = Mat(srcFrame.rows, srcFrame.cols * processes.size(),
                            srcFrame.type());
+
+            auto codec = static_cast<int>(capture.get(CV_CAP_PROP_FOURCC));
+            auto fps = capture.get(CV_CAP_PROP_FPS);
+
+            recorder.open(task.filename + "_processed.mkv",
+                          codec, fps,
+                          Size(dstFrame.cols, dstFrame.rows));
+
+            if (!recorder.isOpened())
+            {
+                PRINT_ERROR(std::endl << std::endl
+                            << "Failed to open codec. FOURCC: "
+                            << static_cast<char>((codec & 0xFF))
+                            << static_cast<char>(((codec >> 8) & 0xFF))
+                            << static_cast<char>(((codec >> 16) & 0xFF))
+                            << static_cast<char>(((codec >> 24) & 0xFF))
+                            << ". Try to use MJPEG");
+
+                codec = CV_FOURCC('M', 'J', 'P', 'G');
+                recorder.open(task.filename + "_processed.mkv",
+                              codec, fps,
+                              Size(dstFrame.cols, dstFrame.rows));
+
+                if (!recorder.isOpened())
+                {
+                    PRINT_ERROR("Failed to open MJPEG codec.");
+                    setFutureValue(false);
+                    return;
+                }
+            }
+
             setFutureValue(true);
+            PRINT_LOG("Begin processing...");
         }
 
         for (int i = 0; i < processes.size(); i++)
@@ -129,10 +162,11 @@ void Processor::processTask(const Task &task)
                 PRINT_ERROR(process->name() << ": Failed to process image");
         }
 
-        imshow("w", dstFrame);
-        waitKey(20);
+        recorder << dstFrame;
     }
 
-    waitKey(0);
+    recorder.release();
     setFutureValue(false);
+
+    PRINT_LOG("File \"" << task.filename << "\" processed");
 }
