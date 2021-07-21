@@ -10,7 +10,7 @@
 struct Task
 {
     std::string filename;
-    int gain {0};
+    unsigned long gain {0};
 
     std::shared_ptr<std::promise<bool>> promise;
 };
@@ -22,7 +22,7 @@ public:
     ~Processor();
 
 public:
-    std::future<bool> addTask(const std::string &filename, int gain);
+    std::future<bool> addTask(const std::string &filename, unsigned long gain);
 
 public:
     bool m_exitFlag {false};

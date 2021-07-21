@@ -26,7 +26,7 @@ Processor::~Processor()
     m_thread.join();
 }
 
-std::future<bool> Processor::addTask(const std::string &filename, int gain)
+std::future<bool> Processor::addTask(const std::string &filename, unsigned long gain)
 {
     Task task;
 
