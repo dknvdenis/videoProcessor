@@ -120,8 +120,14 @@ void Processor::processTask(const Task &task)
             auto codec = static_cast<int>(capture.get(CV_CAP_PROP_FOURCC));
             auto fps = capture.get(CV_CAP_PROP_FPS);
 
-            recorder.open(task.filename + "_processed.mkv",
-                          codec, fps,
+            std::string outFilename;
+            auto extPos = task.filename.find_last_of('.');
+            if (extPos != std::string::npos)
+                outFilename = task.filename.substr(0, extPos) + "_processed.mkv";
+            else
+                outFilename += task.filename + "_processed.mkv";
+
+            recorder.open(outFilename, codec, fps,
                           Size(dstFrame.cols, dstFrame.rows));
 
             if (!recorder.isOpened())
@@ -135,8 +141,7 @@ void Processor::processTask(const Task &task)
                             << ". Try to use MJPEG");
 
                 codec = CV_FOURCC('M', 'J', 'P', 'G');
-                recorder.open(task.filename + "_processed.mkv",
-                              codec, fps,
+                recorder.open(outFilename, codec, fps,
                               Size(dstFrame.cols, dstFrame.rows));
 
                 if (!recorder.isOpened())
