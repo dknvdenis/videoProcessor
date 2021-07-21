@@ -55,6 +55,10 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    PRINT_LOG_SIMPLE("example: curl -v -d \"gain=3&"
+                     "filename=/path/to/file.mp4\" -X POST \"127.0.0.1:8080\""
+                     << std::endl);
+
     signal(SIGINT, &sigintHandler);
 
     if (!app.start(address, port))
