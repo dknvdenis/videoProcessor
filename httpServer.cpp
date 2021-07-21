@@ -1,6 +1,8 @@
 #include "httpServer.h"
 
 #include <stdexcept>
+#include <algorithm>
+
 #include "log.h"
 #include "httpLexer.h"
 #include "vpException.h"
@@ -256,6 +258,7 @@ bool HttpServer::parseParams(ParserUtils &pu, ClientContext &ctx)
                 return false;
 
             ctx.filename = pu.token().toString();
+            std::replace(ctx.filename.begin(), ctx.filename.end(), '+', ' ');
             ctx.filenameFound = true;
         }
         else if (pu.token().compare("gain"))
